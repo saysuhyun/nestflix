@@ -7,7 +7,8 @@ export interface Movie {
 }
 
 @Injectable() // IoC container에게 이거 관리해달라고 지정해주는 애노테이션 
-export class AppService {
+export class MovieService {
+
 
   private movies: Movie[] =
     [
