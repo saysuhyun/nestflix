@@ -1,9 +1,12 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
+import { CreateMovieDto } from './dto/create-movie.dto';
+import { UpdateMovieDto } from './dto/update-movie.dto';
 
 // export 해줘야 컨트롤러에서 Movie 사용이 가능해짐
 export interface Movie {
   id: number;
   title: string;
+  genre: string;
 }
 
 @Injectable() // IoC container에게 이거 관리해달라고 지정해주는 애노테이션 
@@ -15,10 +18,12 @@ export class MovieService {
       {
         id: 1,
         title: '해리포터',
+        genre: 'fantasy',
       },
       {
         id: 2,
         title: '단단단',
+        genre: 'ani',
       }
     ];
 
@@ -44,17 +49,17 @@ export class MovieService {
     }
   }
 
-  createMovie(title: string) {
+  createMovie(createMovieDto: CreateMovieDto) {
     const movie: Movie = {
       id: this.idCounter++,
-      title: title,
+      ...createMovieDto,
     }
     this.movies.push(movie,);
 
     return movie;
   }
 
-  updateMove(id: number, title: string,) {
+  updateMove(id: number, updateMoveDto: UpdateMovieDto) {
     const movie = this.movies.find((m) => m.id === +id);
 
     if (!movie) {
@@ -62,7 +67,7 @@ export class MovieService {
     }
 
     // assgin으로 같은 프로퍼티 키를 가지는 경우 덮어쓰기 
-    Object.assign(movie, { title });
+    Object.assign(movie, { ...updateMoveDto });
 
     return movie;
   }
