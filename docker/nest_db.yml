@@ -1,0 +1,23 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:16 # 사용할 PostgreSQL 버전
+    container_name: nestflix
+    environment:
+      POSTGRES_USER: postgres # 기본 사용자
+      POSTGRES_PASSWORD: postgres # 기본 비밀번호
+      POSTGRES_DB: postgres # 기본 데이터베이스 이름
+    ports:
+      - "5555:5432" # 호스트의 5555 포트를 컨테이너의 5432 포트에 매핑
+    volumes:
+      - postgres_data:/var/lib/postgresql/data # 데이터 지속성을 위한 볼륨 설정
+    networks:
+      - mynetwork
+
+volumes:
+  postgres_data: # 데이터를 저장할 볼륨
+
+networks:
+  mynetwork: # 네트워크 이름
+    driver: bridge
