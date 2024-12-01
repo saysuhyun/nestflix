@@ -1,9 +1,10 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, Query } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, Query, UseInterceptors, ClassSerializerInterceptor } from '@nestjs/common';
 import { MovieService } from './movie.service';
 import { CreateMovieDto } from './dto/create-movie.dto';
 import { UpdateMovieDto } from './dto/update-movie.dto';
 
 @Controller('movie')
+@UseInterceptors(ClassSerializerInterceptor) //Class-Transfomer를 해당 컨트롤러에 적용하겠다 
 export class MovieController {
 
   // AppService가 생성자로 만들어짐 DI

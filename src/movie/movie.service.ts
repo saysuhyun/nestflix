@@ -1,34 +1,29 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { CreateMovieDto } from './dto/create-movie.dto';
 import { UpdateMovieDto } from './dto/update-movie.dto';
-
-// export 해줘야 컨트롤러에서 Movie 사용이 가능해짐
-export interface Movie {
-  id: number;
-  title: string;
-  genre: string;
-}
+import { Movie } from './entity/movie.entity';
 
 @Injectable() // IoC container에게 이거 관리해달라고 지정해주는 애노테이션 
 export class MovieService {
 
-
-  private movies: Movie[] =
-    [
-      {
-        id: 1,
-        title: '해리포터',
-        genre: 'fantasy',
-      },
-      {
-        id: 2,
-        title: '단단단',
-        genre: 'ani',
-      }
-    ];
+  // 서비스 생성시 해당 movies에 값이 들어감 여기선 초기화만 
+  private movies: Movie[] = [];
 
   private idCounter = 3; // 새로 생성되는 영화 id 
 
+  constructor() {
+    const movie1 = new Movie();
+    movie1.id = 1;
+    movie1.title = '해리포터';
+    movie1.genre = 'fantasy';
+
+    const movie2 = new Movie();
+    movie2.id = 2;
+    movie2.title = '반지의 제왕';
+    movie2.genre = 'action';
+
+    this.movies.push(movie1, movie2);
+  }
 
   getManyMovies(title?: string) {
     if (!title) {
