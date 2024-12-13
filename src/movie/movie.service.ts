@@ -5,6 +5,7 @@ import { Movie } from "./entity/movie.entity";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Repository } from "typeorm/repository/Repository";
 import { create } from "domain";
+import { Like } from "typeorm";
 
 @Injectable() // IoC container에게 이거 관리해달라고 지정해주는 애노테이션
 export class MovieService {
@@ -14,9 +15,20 @@ export class MovieService {
     private readonly movieRepository: Repository<Movie>
   ) {}
 
-  getManyMovies(title?: string) {
+  async getManyMovies(title?: string) {
     // 나중에 title filter 기능 추가
-    return this.movieRepository.find();
+
+    if (!title) {
+      return await this.movieRepository.find();
+    }
+
+    // 비슷한 타이틀로 검색할 수 있도록 Like 사용
+    return await this.movieRepository.find({
+      where: {
+        title: Like(`%${title}%`),
+      },
+    });
+
     // if (!title) {
     //   return this.movies;
     // }
