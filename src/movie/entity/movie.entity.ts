@@ -4,6 +4,8 @@ import {
   CreateDateColumn,
   Entity,
   JoinColumn,
+  JoinTable,
+  ManyToMany,
   ManyToOne,
   OneToOne,
   PrimaryColumn,
@@ -14,6 +16,7 @@ import {
 import { BaseTable } from "../../common/entity/base-table.entity";
 import { MovieDetail } from "./movie-detail.entity";
 import { Director } from "src/director/entity/director.entity";
+import { Genre } from "src/genre/entities/genre.entity";
 
 /// ManyToOne Director -> 감독은 여개의 영화를 만들수 있ㅡ
 /// OneToOne MovieDirector -> 영화는 하나의 상세 내용을 갖을 수 있음
@@ -30,10 +33,9 @@ export class Movie extends BaseTable {
   // 유니크화
   title: string;
 
-  @Column()
-  //값을 커스텀해서 변환시킬 수 있음
-  @Transform(({ value }) => value.toString().toUpperCase())
-  genre: string;
+  @JoinTable() // 다대다에선 어디에 JoinTable넣어도 오케
+  @ManyToMany(() => Genre, (genre) => genre.movies)
+  genres: Genre[];
 
   // 상대 테이블 레퍼런스도 추가해주면 좋음
   @OneToOne(() => MovieDetail, (movieDetail) => movieDetail.id, {
