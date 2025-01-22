@@ -1,9 +1,21 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
-import { DirectorService } from './director.service';
-import { CreateDirectorDto } from './dto/create-director.dto';
-import { UpdateDirectorDto } from './dto/update-director.dto';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Patch,
+  Param,
+  Delete,
+  UseInterceptors,
+  ClassSerializerInterceptor,
+  ParseIntPipe,
+} from "@nestjs/common";
+import { DirectorService } from "./director.service";
+import { CreateDirectorDto } from "./dto/create-director.dto";
+import { UpdateDirectorDto } from "./dto/update-director.dto";
 
-@Controller('director')
+@Controller("director")
+@UseInterceptors(ClassSerializerInterceptor) //Class-Transfomer를 해당 컨트롤러에 적용하겠다
 export class DirectorController {
   constructor(private readonly directorService: DirectorService) {}
 
@@ -17,18 +29,21 @@ export class DirectorController {
     return this.directorService.findAll();
   }
 
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.directorService.findOne(+id);
+  @Get(":id")
+  findOne(@Param("id", ParseIntPipe) id: number) {
+    return this.directorService.findOne(id);
   }
 
-  @Patch(':id')
-  update(@Param('id') id: string, @Body() updateDirectorDto: UpdateDirectorDto) {
-    return this.directorService.update(+id, updateDirectorDto);
+  @Patch(":id")
+  update(
+    @Param("id", ParseIntPipe) id: number,
+    @Body() updateDirectorDto: UpdateDirectorDto
+  ) {
+    return this.directorService.update(id, updateDirectorDto);
   }
 
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.directorService.remove(+id);
+  @Delete(":id")
+  remove(@Param("id", ParseIntPipe) id: number) {
+    return this.directorService.remove(id);
   }
 }
