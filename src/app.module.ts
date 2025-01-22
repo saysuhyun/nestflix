@@ -5,6 +5,8 @@ import { TypeOrmModule } from "@nestjs/typeorm";
 import { ConfigModule, ConfigService } from "@nestjs/config";
 import * as Joi from "joi";
 import { MovieDetail } from "./movie/entity/movie-detail.entity";
+import { DirectorModule } from "./director/director.module";
+import { Director } from "./director/entity/director.entity";
 
 @Module({
   imports: [
@@ -34,6 +36,7 @@ import { MovieDetail } from "./movie/entity/movie-detail.entity";
           // 엔티티 넣을 꺼 추가
           Movie,
           MovieDetail,
+          Director,
         ],
         synchronize: true,
       }),
@@ -51,6 +54,8 @@ import { MovieDetail } from "./movie/entity/movie-detail.entity";
     //   synchronize: true, // 개발할 때만 켜놓음 프로덕션 데이터베이스에서는 이거 안 쓴다 . 잘못하면 다 날라감
     // }), // 모듈 불러올 때 forRoot 씀 등록할때 데이터베이스 정보
     MovieModule,
+
+    DirectorModule,
   ],
   controllers: [],
   providers: [],

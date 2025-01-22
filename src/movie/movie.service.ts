@@ -7,6 +7,8 @@ import { Repository } from "typeorm/repository/Repository";
 import { create } from "domain";
 import { Like } from "typeorm";
 import { MovieDetail } from "./entity/movie-detail.entity";
+import { Director } from "src/director/entity/director.entity";
+import { dir } from "console";
 
 @Injectable() // IoC container에게 이거 관리해달라고 지정해주는 애노테이션
 export class MovieService {
@@ -15,15 +17,19 @@ export class MovieService {
     @InjectRepository(Movie)
     private readonly movieRepository: Repository<Movie>,
     @InjectRepository(MovieDetail)
-    private readonly movieDetailRepository: Repository<MovieDetail>
+    private readonly movieDetailRepository: Repository<MovieDetail>,
+    @InjectRepository(Director)
+    private readonly directorRepository: Repository<Director>
   ) {}
 
-  async getManyMovies(title?: string) {
+  async findAll(title?: string) {
     // 나중에 title filter 기능 추가
 
     if (!title) {
       return [
-        await this.movieRepository.find(),
+        await this.movieRepository.find({
+          relations: ["director"],
+        }),
         await this.movieDetailRepository.count(),
       ];
     }
@@ -33,10 +39,11 @@ export class MovieService {
       where: {
         title: Like(`%${title}%`),
       },
+      relations: ["director"],
     });
   }
 
-  async getMovieById(id: number) {
+  async findOne(id: number) {
     {
       const movie = await this.movieRepository.findOne({
         where: {
@@ -44,7 +51,7 @@ export class MovieService {
         },
         // 영화 movie값 가지고 올 때 같이 가지고 오고 싶은 값을 relations에 넣어주면 됨
         // detail이라는 파라미터는 MovieDetail을 가지고 올테니까 여기서 엮어서 출력되겠네
-        relations: ["detail"],
+        relations: ["detail", "director"],
       });
       if (!movie) {
         throw new NotFoundException("존재하지 않는 id의 영화입니다.");
@@ -53,18 +60,29 @@ export class MovieService {
     }
   }
 
-  async createMovie(createMovieDto: CreateMovieDto) {
+  async create(createMovieDto: CreateMovieDto) {
+    const director = await this.directorRepository.findOne({
+      where: {
+        id: createMovieDto.directorId,
+      },
+    });
+
+    if (!director) {
+      throw new NotFoundException("존재하지 않는 ID의 감독입니다");
+    }
+
     const movie = await this.movieRepository.save({
       title: createMovieDto.title,
       genre: createMovieDto.genre,
       detail: {
         detail: createMovieDto.detail,
       },
+      director,
     });
     return movie;
   }
 
-  async updateMove(id: number, updateMoveDto: UpdateMovieDto) {
+  async update(id: number, updateMoveDto: UpdateMovieDto) {
     const movie = await this.movieRepository.findOne({
       where: {
         id,
@@ -76,7 +94,37 @@ export class MovieService {
       throw new NotFoundException("존재하지 않는 id의 영화입니다.");
     }
 
-    const { detail, ...MovieRest } = updateMoveDto;
+    const { detail, directorId, ...movieRest } = updateMoveDto;
+
+    let newDirector;
+
+    if (directorId) {
+      const director = await this.directorRepository.findOne({
+        where: {
+          id: directorId,
+        },
+      });
+
+      if (!director) {
+        throw new NotFoundException("존재하지 않는 ID의 감독입니다");
+      }
+      newDirector = director;
+    }
+
+    /**
+     *{ 요렇게 들어감
+     * ...movieRest,
+     * director: director
+     * }
+     */
+    const movieUpdateFields = {
+      ...movieRest,
+      //newDirector 값이 없으면 그냥 movieRest와 동일
+      //값이 있는 경우 director라는 속성에 newDirector를 넣어줌
+      ...(newDirector && { director: newDirector }),
+    };
+
+    await this.movieRepository.update({ id }, movieUpdateFields);
 
     if (detail) {
       await this.movieDetailRepository.update(
@@ -89,18 +137,18 @@ export class MovieService {
       );
     }
 
-    this.movieRepository.update({ id }, MovieRest);
+    this.movieRepository.update({ id }, movieRest);
 
     const newMovie = await this.movieRepository.findOne({
       where: {
         id,
       },
-      relations: ["detail"],
+      relations: ["detail", "director"], // 찾을때 감독값도 같이 가져와
     });
     return newMovie;
   }
 
-  async deleteMovie(id: number) {
+  async remove(id: number) {
     const movie = await this.movieRepository.findOne({
       where: {
         id,
