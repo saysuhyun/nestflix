@@ -10,6 +10,7 @@ import {
 export class MovieTitleValidationPipe implements PipeTransform<string, string> {
   transform(value: string, metadata: ArgumentMetadata): string {
     if (!value) {
+      // 타이틀이 없는 경우는 그냥 넘어가도록
       return value;
     }
     // 만약 글자 길이가 2보다 작으면 에러 던지기
