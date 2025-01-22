@@ -17,6 +17,7 @@ import {
 import { MovieService } from "./movie.service";
 import { CreateMovieDto } from "./dto/create-movie.dto";
 import { UpdateMovieDto } from "./dto/update-movie.dto";
+import { MovieTitleValidationPipe } from "./pipe/movie-title-validation.pipe";
 
 @Controller("movie")
 @UseInterceptors(ClassSerializerInterceptor) //Class-Transfomer를 해당 컨트롤러에 적용하겠다
@@ -27,7 +28,7 @@ export class MovieController {
 
   @Get()
   getMovies(
-    @Query("title") title?: string // 쿼리 파라미터로 받아서 분기
+    @Query("title", MovieTitleValidationPipe) title?: string // 쿼리 파라미터로 받아서 분기
   ) {
     return this.movieService.findAll(title);
   }
