@@ -74,9 +74,7 @@ export class AuthService {
     });
   }
 
-  async login(rawToken: string) {
-    const { email, password } = this.parseBasicToken(rawToken);
-
+  async authenticate(email: string, password: string) {
     const user = await this.userRepository.findOne({
       where: {
         email,
@@ -93,7 +91,12 @@ export class AuthService {
     if (!passOk) {
       throw new BadRequestException("잘못된 로그인 정보입니다.");
     }
+    return user;
+  }
 
+  async login(rawToken: string) {
+    const { email, password } = this.parseBasicToken(rawToken);
+    const user = await this.authenticate(email, password);
     const refreshTokenSecret = this.configService.get<string>(
       "ACCESS_TOKEN_SECRET"
     );
@@ -103,6 +106,7 @@ export class AuthService {
 
     return {
       refreshToken: await this.jwtService.signAsync(
+        // 밑의 키가 리스폰스로 날라감
         {
           sub: user.id,
           role: user.role,
