@@ -5,6 +5,7 @@ import { Repository } from "typeorm";
 import * as bcrypt from "bcrypt";
 import { ConfigService } from "@nestjs/config";
 import { JwtService } from "@nestjs/jwt";
+import { envVariables } from "src/common/const/env.const";
 
 @Injectable()
 export class AuthService {
@@ -57,22 +58,24 @@ export class AuthService {
       throw new BadRequestException("토큰 포멧이 잘못됐습니다.!");
     }
 
-    // 검증이랑 payload 같이 가지고옴
-    const payload = await this.jwtService.verifyAsync(token, {
-      secret: this.configService.get<string>("REFRESH_TOKEN_SECRET"),
-    });
-
-    if (isRefreshtoken) {
-      if (payload.type !== "refresh") {
-        throw new BadRequestException("refresh 토큰을 입력해주세요 ");
+    try {
+      // 검증이랑 payload 같이 가지고옴
+      const payload = await this.jwtService.verifyAsync(token, {
+        secret: this.configService.get<string>(envVariables.refreshTokenSecret),
+      });
+      if (isRefreshtoken) {
+        if (payload.type !== "refresh") {
+          throw new BadRequestException("refresh 토큰을 입력해주세요 ");
+        }
+      } else {
+        if (payload.type !== "access") {
+          throw new BadRequestException("access 토큰을 입력해주세요 ");
+        }
       }
-    } else {
-      if (payload.type !== "access") {
-        throw new BadRequestException("access 토큰을 입력해주세요 ");
-      }
+      return payload;
+    } catch (e) {
+      throw new BadRequestException("토큰이 만료되었습니다.");
     }
-
-    return payload;
   }
 
   // rawToken -> "Basic $token"
@@ -92,7 +95,7 @@ export class AuthService {
     //round가 커지면 해쉬가 커짐 (두번째 파라미터) 비번을 해쉬한 값을 리턴
     const hash = await bcrypt.hash(
       password,
-      this.configService.get<number>("HASH_ROUNDS")
+      this.configService.get<number>(envVariables.hashRounds)
     );
 
     await this.userRepository.save({
@@ -135,10 +138,10 @@ export class AuthService {
     isRefreshtoken: boolean
   ) {
     const refreshTokenSecret = this.configService.get<string>(
-      "ACCESS_TOKEN_SECRET"
+      envVariables.refreshTokenSecret
     );
     const accessTokenSecret = this.configService.get<string>(
-      "REFRESH_TOKEN_SECRET"
+      envVariables.accessTokenSecret
     );
 
     return this.jwtService.signAsync(

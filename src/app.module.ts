@@ -12,34 +12,24 @@ import { Genre } from "./genre/entities/genre.entity";
 import { AuthModule } from "./auth/auth.module";
 import { UserModule } from "./user/user.module";
 import { User } from "./user/entities/user.entity";
+import { envVariables } from "./common/const/env.const";
 
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true, // 어떤 모듈에서라도 해당 환경변수 쓸 수 있도록 세팅
-      validationSchema: Joi.object({
-        ENV: Joi.string().valid("dev", "prod").required(),
-        DB_TYPE: Joi.string().valid("postgres").required(), // 필수값인데 값은 무조건 postgres
-        DB_HOST: Joi.string().required(),
-        DB_PORT: Joi.number().required(),
-        DB_USERNAME: Joi.string().required(),
-        DB_PASSWORD: Joi.string().required(),
-        DB_DATABASE: Joi.string().required(),
-        HASH_ROUNDS: Joi.number().required(),
-        ACCESS_TOKEN_SECRET: Joi.string().required(),
-        REFRESH_TOKEN_SECRET: Joi.string().required(),
-      }),
+      validationSchema: Joi.object({}),
     }),
     // 디비연동
     // Async 비동기 이유 : configModule이 전부 인스턴스화 IoC 컨테이너에 생성된 후에 쓰니가 Async
     TypeOrmModule.forRootAsync({
       useFactory: (configService: ConfigService) => ({
-        type: configService.get<string>("DB_TYPE") as "postgres",
-        host: configService.get<string>("DB_HOST"),
-        port: configService.get<number>("DB_PORT"),
-        username: configService.get<string>("DB_USERNAME"),
-        password: configService.get<string>("DB_PASSWORD"),
-        database: configService.get<string>("DB_DATABASE"),
+        type: configService.get<string>(envVariables.dbType) as "postgres",
+        host: configService.get<string>(envVariables.dbHost),
+        port: configService.get<number>(envVariables.dbPort),
+        username: configService.get<string>(envVariables.dbUserName),
+        password: configService.get<string>(envVariables.dbPassword),
+        database: configService.get<string>(envVariables.dbDatabase),
         entities: [
           // 엔티티 넣을 꺼 추가
           Movie,
