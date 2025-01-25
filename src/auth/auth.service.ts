@@ -4,19 +4,21 @@ import { User } from "src/user/entities/user.entity";
 import { Repository } from "typeorm";
 import * as bcrypt from "bcrypt";
 import { ConfigService } from "@nestjs/config";
+import { JwtService } from "@nestjs/jwt";
 
 @Injectable()
 export class AuthService {
   constructor(
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
-    private readonly configService: ConfigService
+    private readonly configService: ConfigService,
+    private readonly jwtService: JwtService // auth.module에서 등록했으니까 주입 가능
   ) {}
 
   parseBasicToken(rawToken: string) {
     /// 1) token을  ' ' 기준으로 스플릿 후 토큰 값만 추출
     const basicSplit = rawToken.split(" ");
-    if (basicSplit.length != 2) {
+    if (basicSplit.length !== 2) {
       throw new BadRequestException("토큰 포멧이 잘못됐습니다.!");
     }
     /// [Baisc, $token]
@@ -70,5 +72,58 @@ export class AuthService {
         email,
       },
     });
+  }
+
+  async login(rawToken: string) {
+    const { email, password } = this.parseBasicToken(rawToken);
+
+    const user = await this.userRepository.findOne({
+      where: {
+        email,
+      },
+    });
+
+    if (!user) {
+      throw new BadRequestException("잘못된 로그인 정보입니다.");
+    }
+
+    // 그냥 password와 디비 저장된 user의 password 비교
+    const passOk = await bcrypt.compare(password, user.password);
+
+    if (!passOk) {
+      throw new BadRequestException("잘못된 로그인 정보입니다.");
+    }
+
+    const refreshTokenSecret = this.configService.get<string>(
+      "ACCESS_TOKEN_SECRET"
+    );
+    const accessTokenSecret = this.configService.get<string>(
+      "REFRESH_TOKEN_SECRET"
+    );
+
+    return {
+      refreshToken: await this.jwtService.signAsync(
+        {
+          sub: user.id,
+          role: user.role,
+          type: "refresh",
+        },
+        {
+          secret: refreshTokenSecret,
+          expiresIn: "24h",
+        }
+      ),
+      accessToken: await this.jwtService.signAsync(
+        {
+          sub: user.id,
+          role: user.role,
+          type: "access",
+        },
+        {
+          secret: accessTokenSecret,
+          expiresIn: 300, //300초
+        }
+      ),
+    };
   }
 }
