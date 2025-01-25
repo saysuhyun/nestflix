@@ -1,6 +1,6 @@
 import { BadRequestException, Injectable } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
-import { User } from "src/user/entities/user.entity";
+import { Role, User } from "src/user/entities/user.entity";
 import { Repository } from "typeorm";
 import * as bcrypt from "bcrypt";
 import { ConfigService } from "@nestjs/config";
@@ -22,7 +22,11 @@ export class AuthService {
       throw new BadRequestException("토큰 포멧이 잘못됐습니다.!");
     }
     /// [Baisc, $token]
-    const [_, token] = basicSplit;
+    const [basic, token] = basicSplit;
+
+    if (basic.toLocaleLowerCase() !== "basic") {
+      throw new BadRequestException("토큰 포멧이 잘못됐습니다.!");
+    }
 
     ///2 추출한 토큰을 base64 디코딩 후 이메일과 비밀번호로 나눈다
     // bas364로 인코딩 된 걸 utf8로 변경
@@ -40,6 +44,35 @@ export class AuthService {
       email,
       password,
     };
+  }
+
+  async parseBearerToken(rawToken: string, isRefreshtoken: boolean) {
+    const basicSplit = rawToken.split(" ");
+    if (basicSplit.length !== 2) {
+      throw new BadRequestException("토큰 포멧이 잘못됐습니다.!");
+    }
+    const [bearer, token] = basicSplit;
+
+    if (bearer.toLocaleLowerCase() !== "bearer") {
+      throw new BadRequestException("토큰 포멧이 잘못됐습니다.!");
+    }
+
+    // 검증이랑 payload 같이 가지고옴
+    const payload = await this.jwtService.verifyAsync(token, {
+      secret: this.configService.get<string>("REFRESH_TOKEN_SECRET"),
+    });
+
+    if (isRefreshtoken) {
+      if (payload.type !== "refresh") {
+        throw new BadRequestException("refresh 토큰을 입력해주세요 ");
+      }
+    } else {
+      if (payload.type !== "access") {
+        throw new BadRequestException("access 토큰을 입력해주세요 ");
+      }
+    }
+
+    return payload;
   }
 
   // rawToken -> "Basic $token"
@@ -94,7 +127,13 @@ export class AuthService {
     return user;
   }
 
-  async issueToken(user: User, isRefreshtoken: boolean) {
+  async issueToken(
+    user: {
+      id: number;
+      role: Role;
+    },
+    isRefreshtoken: boolean
+  ) {
     const refreshTokenSecret = this.configService.get<string>(
       "ACCESS_TOKEN_SECRET"
     );
